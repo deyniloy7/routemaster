@@ -30,6 +30,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private static final String AUTH_HEADER = "Authorization";
 
+    private final WebAuthenticationDetailsSource authDetailsSource = new WebAuthenticationDetailsSource();
+
     private JwtService jwtService;
 
     private UserDetailsServiceImpl userDetailsService;
@@ -57,10 +59,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 && userDetails.isAccountNonLocked()
                 && userDetails.isAccountNonExpired()) {
                     UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-                    authToken.setDetails(
-                            new WebAuthenticationDetailsSource()
-                                    .buildDetails(request)
-                    );
+                    authToken.setDetails(authDetailsSource.buildDetails(request));
 
                     SecurityContextHolder.getContext().setAuthentication(authToken);
                 }
