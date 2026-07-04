@@ -40,7 +40,10 @@ public class SecurityConfig {
                         "/auth/register",
                         "/auth/login",
                         "/auth/refresh",
-                        "/actuator/health"
+                        "/actuator/health",
+                        "/swagger-ui.html",
+                        "/swagger-ui/**",
+                        "/v3/api-docs/**"
                 ).permitAll()
                 .anyRequest().authenticated())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)

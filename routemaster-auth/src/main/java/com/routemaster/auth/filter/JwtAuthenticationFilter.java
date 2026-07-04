@@ -18,9 +18,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.security.SignatureException;
-import java.util.Collections;
-import java.util.Enumeration;
 
 @Component
 @RequiredArgsConstructor
@@ -32,9 +29,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final WebAuthenticationDetailsSource authDetailsSource = new WebAuthenticationDetailsSource();
 
-    private JwtService jwtService;
+    private final JwtService jwtService;
 
-    private UserDetailsServiceImpl userDetailsService;
+    private final UserDetailsServiceImpl userDetailsService;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
