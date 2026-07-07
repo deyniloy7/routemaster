@@ -20,6 +20,7 @@ public class UserDetailsImpl implements UserDetails {
 
     @Getter
     private final String email;
+
     private final String passwordHash; // needed for Spring Security only
     private final Set<Role> roles;
     private final boolean active;
