@@ -29,7 +29,7 @@ public class UserDetailsImplTest {
     void getAuthorities_shouldReturnTheListOfRoles() {
         assertThat(userDetails.getAuthorities())
                 .extracting("authority")
-                .containsExactly("DRIVER");
+                .containsExactly("ROLE_DRIVER");
     }
 
     @Test
