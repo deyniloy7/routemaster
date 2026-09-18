@@ -24,3 +24,7 @@ jwt:
 
 server:
   port: 8081
+
+logging:
+  pattern:
+    level: "%5p [%X{requestId}]"

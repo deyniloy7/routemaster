@@ -62,7 +62,7 @@ public class AuthService {
     }
 
     public AuthResponse refreshToken(RefreshTokenRequest request) {
-        String email = redisTemplate.opsForValue().get(request.getRefreshToken());
+        String email = redisTemplate.opsForValue().get("refresh:" + request.getRefreshToken());
 
         if (email == null) {
             throw new InvalidTokenException();

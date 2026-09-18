@@ -2,6 +2,7 @@ package com.routemaster.auth.controller;
 
 import com.routemaster.auth.dto.*;
 import com.routemaster.auth.service.AuthService;
+import com.routemaster.common.constants.ApiPaths;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -10,7 +11,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/v1/auth")
+@RequestMapping(ApiPaths.Auth.BASE)
 @RequiredArgsConstructor
 public class AuthController {
 

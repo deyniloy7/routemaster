@@ -1,9 +1,11 @@
 package com.routemaster.auth.config;
 
 import com.routemaster.auth.filter.JwtAuthenticationFilter;
+import com.routemaster.auth.filter.RequestIdFilter;
 import com.routemaster.auth.security.JwtAccessDeniedHandler;
 import com.routemaster.auth.security.JwtAuthenticationEntryPoint;
 import com.routemaster.auth.security.UserDetailsServiceImpl;
+import com.routemaster.common.constants.ApiPaths;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -27,6 +29,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @RequiredArgsConstructor
 public class SecurityConfig {
 
+    private final RequestIdFilter requestIdFilter;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final UserDetailsServiceImpl userDetailsService;
     private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
@@ -39,9 +42,9 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                 .requestMatchers(
-                        "/auth/register",
-                        "/auth/login",
-                        "/auth/refresh",
+                        ApiPaths.Auth.REGISTER,
+                        ApiPaths.Auth.LOGIN,
+                        ApiPaths.Auth.REFRESH,
                         "/actuator/health",
                         "/swagger-ui.html",
                         "/swagger-ui/**",
@@ -49,6 +52,7 @@ public class SecurityConfig {
                 ).permitAll()
                 .anyRequest().authenticated())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(requestIdFilter, JwtAuthenticationFilter.class)
                 .authenticationProvider(authenticationProvider())
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint(jwtAuthenticationEntryPoint)
