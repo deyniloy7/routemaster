@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>UserDetailsImplTest.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">jacoco.exec</a> &gt; <a href="index.source.html" class="el_package">com.routemaster.auth.security</a> &gt; <span class="el_source">UserDetailsImplTest.java</span></div><h1>UserDetailsImplTest.java</h1><pre class="source lang-java linenums">package com.routemaster.auth.security;
+
+import com.routemaster.auth.entity.Role;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.util.Set;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+@ExtendWith(MockitoExtension.class)
+<span class="fc" id="L14">public class UserDetailsImplTest {</span>
+    private UserDetailsImpl userDetails;
+
+    @BeforeEach
+    void setup() throws Exception {
+<span class="fc" id="L19">        userDetails = new UserDetailsImpl(</span>
+                &quot;test-id-123&quot;,
+                &quot;driver@routemaster.com&quot;,
+                &quot;$2a$10$hashedpassword&quot;,
+<span class="fc" id="L23">                Set.of(Role.DRIVER),</span>
+                true
+        );
+<span class="fc" id="L26">    }</span>
+
+    @Test
+    void getAuthorities_shouldReturnTheListOfRoles() {
+<span class="fc" id="L30">        assertThat(userDetails.getAuthorities())</span>
+<span class="fc" id="L31">                .extracting(&quot;authority&quot;)</span>
+<span class="fc" id="L32">                .containsExactly(&quot;ROLE_DRIVER&quot;);</span>
+<span class="fc" id="L33">    }</span>
+
+    @Test
+    void getPassword_shouldReturnThePasswordHash() {
+<span class="fc" id="L37">        assertThat(userDetails.getPassword())</span>
+<span class="fc" id="L38">                .isEqualTo(&quot;$2a$10$hashedpassword&quot;);</span>
+<span class="fc" id="L39">    }</span>
+
+    @Test
+    void getUsername_shouldReturnTheUsername() {
+<span class="fc" id="L43">        assertThat(userDetails.getUsername())</span>
+<span class="fc" id="L44">                .isEqualTo(&quot;driver@routemaster.com&quot;);</span>
+<span class="fc" id="L45">    }</span>
+
+    @Test
+    void isAccountNonExpired_shouldReturnTrueIfAccountIsActive() {
+<span class="fc" id="L49">        assertThat(userDetails.isAccountNonExpired())</span>
+<span class="fc" id="L50">                .isTrue();</span>
+<span class="fc" id="L51">    }</span>
+
+    @Test
+    void isAccountNonLocked_shouldReturnTrueIfAccountIsNotLocked() {
+<span class="fc" id="L55">        assertThat(userDetails.isAccountNonLocked())</span>
+<span class="fc" id="L56">                .isTrue();</span>
+<span class="fc" id="L57">    }</span>
+
+    @Test
+    void isCredentialsNonExpired_shouldReturnTrueIfCredentialsAreActive() {
+<span class="fc" id="L61">        assertThat(userDetails.isCredentialsNonExpired())</span>
+<span class="fc" id="L62">                .isTrue();</span>
+<span class="fc" id="L63">    }</span>
+
+    @Test
+    void isEnabled_shouldReturnTrueIfAccountIsEnabled() {
+<span class="fc" id="L67">        assertThat(userDetails.isEnabled())</span>
+<span class="fc" id="L68">                .isTrue();</span>
+<span class="fc" id="L69">    }</span>
+
+    @Test
+    void getId_shouldReturnUserId() {
+<span class="fc" id="L73">        assertThat(userDetails.getId())</span>
+<span class="fc" id="L74">                .isEqualTo(&quot;test-id-123&quot;);</span>
+<span class="fc" id="L75">    }</span>
+
+    @Test
+    void getEmail_shouldReturnUserEmail() {
+<span class="fc" id="L79">        assertThat(userDetails.getEmail())</span>
+<span class="fc" id="L80">                .isEqualTo(&quot;driver@routemaster.com&quot;);</span>
+<span class="fc" id="L81">    }</span>
+
+    @Test
+    void isEnabled_shouldReturnFalseWhenUserIsInactive() {
+<span class="fc" id="L85">        UserDetailsImpl inactiveUser = new UserDetailsImpl(</span>
+                &quot;test-id-456&quot;,
+                &quot;inactive@routemaster.com&quot;,
+                &quot;$2a$10$hashedpassword&quot;,
+<span class="fc" id="L89">                Set.of(Role.DRIVER),</span>
+                false
+        );
+<span class="fc" id="L92">        assertThat(inactiveUser.isEnabled()).isFalse();</span>
+<span class="fc" id="L93">    }</span>
+
+    @Test
+    void isAccountNonLocked_shouldReturnFalseWhenUserIsInactive() {
+<span class="fc" id="L97">        UserDetailsImpl inactiveUser = new UserDetailsImpl(</span>
+                &quot;test-id-456&quot;,
+                &quot;inactive@routemaster.com&quot;,
+                &quot;$2a$10$hashedpassword&quot;,
+<span class="fc" id="L101">                Set.of(Role.DRIVER),</span>
+                false
+        );
+<span class="fc" id="L104">        assertThat(inactiveUser.isAccountNonLocked()).isFalse();</span>
+<span class="fc" id="L105">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

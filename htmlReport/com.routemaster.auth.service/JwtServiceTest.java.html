@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>JwtServiceTest.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">jacoco.exec</a> &gt; <a href="index.source.html" class="el_package">com.routemaster.auth.service</a> &gt; <span class="el_source">JwtServiceTest.java</span></div><h1>JwtServiceTest.java</h1><pre class="source lang-java linenums">package com.routemaster.auth.service;
+
+import com.routemaster.auth.entity.Role;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.MalformedJwtException;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
+import io.jsonwebtoken.security.SecurityException;
+
+import java.util.Set;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
+@ExtendWith(MockitoExtension.class)
+<span class="fc" id="L19">class JwtServiceTest {</span>
+
+    private JwtService jwtService;
+
+    private static final String TEST_SECRET = &quot;746573745365637265744040404040404040404040404040404040404040404040&quot;;
+
+    private static final long TEST_EXPIRY = 900000L;
+
+    @BeforeEach
+    void setup() throws Exception {
+<span class="fc" id="L29">        this.jwtService = new JwtService();</span>
+<span class="fc" id="L30">        ReflectionTestUtils.setField(jwtService, &quot;secret&quot;, TEST_SECRET);</span>
+<span class="fc" id="L31">        ReflectionTestUtils.setField(jwtService, &quot;accessTokenExpiry&quot;, TEST_EXPIRY);</span>
+<span class="fc" id="L32">        ReflectionTestUtils.invokeMethod(jwtService, &quot;initSigningKey&quot;);</span>
+<span class="fc" id="L33">    }</span>
+
+    @Test
+    void generateToken_shouldReturnValidJwtStructure() {
+<span class="fc" id="L37">        String username = &quot;driver@routemaster.com&quot;;</span>
+<span class="fc" id="L38">        Set&lt;Role&gt; roles = Set.of(Role.DRIVER);</span>
+
+<span class="fc" id="L40">        String token = jwtService.generateToken(username, roles);</span>
+
+<span class="fc" id="L42">        assertThat(token.split(&quot;\\.&quot;)).hasSize(3);</span>
+<span class="fc" id="L43">    }</span>
+
+    @Test
+    void generateToken_shouldContainCorrectUsername() {
+<span class="fc" id="L47">        String username = &quot;driver@routemaster.com&quot;;</span>
+<span class="fc" id="L48">        Set&lt;Role&gt; roles = Set.of(Role.DRIVER);</span>
+
+<span class="fc" id="L50">        String token = jwtService.generateToken(username, roles);</span>
+
+<span class="fc" id="L52">        assertThat(jwtService.extractUsername(token)).isEqualTo(username);</span>
+<span class="fc" id="L53">    }</span>
+
+    @Test
+    void generateToken_shouldContainCorrectRoles() {
+<span class="fc" id="L57">        String username = &quot;driver@routemaster.com&quot;;</span>
+<span class="fc" id="L58">        Set&lt;Role&gt; roles = Set.of(Role.DRIVER);</span>
+
+<span class="fc" id="L60">        String token = jwtService.generateToken(username, roles);</span>
+
+<span class="fc" id="L62">        assertThat(jwtService.extractRoles(token)).isEqualTo(Set.of(Role.DRIVER));</span>
+<span class="fc" id="L63">    }</span>
+
+    @Test
+    void generateToken_shouldNotBeExpiredImmediately() {
+<span class="fc" id="L67">        String username = &quot;driver@routemaster.com&quot;;</span>
+<span class="fc" id="L68">        Set&lt;Role&gt; roles = Set.of(Role.DRIVER);</span>
+
+<span class="fc" id="L70">        String token = jwtService.generateToken(username, roles);</span>
+
+<span class="fc" id="L72">        assertThat(jwtService.validateToken(token, username)).isTrue();</span>
+<span class="fc" id="L73">    }</span>
+
+    @Test
+    void extractUsername_validTokenShouldReturnCorrectUsername() {
+<span class="fc" id="L77">        String username = &quot;driver@routemaster.com&quot;;</span>
+<span class="fc" id="L78">        Set&lt;Role&gt; roles = Set.of(Role.DRIVER);</span>
+
+<span class="fc" id="L80">        String token = jwtService.generateToken(username, roles);</span>
+
+<span class="fc" id="L82">        assertThat(jwtService.extractUsername(token)).isEqualTo(username);</span>
+<span class="fc" id="L83">    }</span>
+
+    @Test
+    void extractUsername_expiredTokensShouldThrowExpiredJwtException() {
+<span class="fc" id="L87">        ReflectionTestUtils.setField(jwtService, &quot;accessTokenExpiry&quot;, -1000L);</span>
+<span class="fc" id="L88">        String token = jwtService.generateToken(</span>
+                &quot;driver@routemaster.com&quot;,
+<span class="fc" id="L90">                Set.of(Role.DRIVER));</span>
+<span class="pc" id="L91">        assertThrows(ExpiredJwtException.class, () -&gt; jwtService.extractUsername(token));</span>
+<span class="fc" id="L92">    }</span>
+
+    @Test
+    void extractUsername_malformedTokensShouldThrowMalformedJwtException() {
+<span class="fc" id="L96">        String token = &quot;abcdefgh123456&quot;;</span>
+<span class="pc" id="L97">        assertThrows(MalformedJwtException.class, () -&gt; jwtService.extractUsername(token));</span>
+<span class="fc" id="L98">    }</span>
+
+    @Test
+    void extractUsername_tamperedTokensShouldThrowSecurityException() {
+<span class="fc" id="L102">        String validToken = jwtService.generateToken(</span>
+                &quot;driver@routemaster.com&quot;,
+<span class="fc" id="L104">                Set.of(Role.DRIVER)</span>
+        );
+<span class="fc" id="L106">        String tamperedToken = validToken.substring(0, validToken.lastIndexOf(&quot;.&quot;)) + &quot;.invalidSignature&quot;;</span>
+<span class="pc" id="L107">        assertThrows(SecurityException.class, () -&gt; jwtService.extractUsername(tamperedToken));</span>
+<span class="fc" id="L108">    }</span>
+
+    @Test
+    void extractUsername_validTokensWithNullSubjectReturnsNull() {
+<span class="fc" id="L112">        String token = jwtService.generateToken(</span>
+                null,
+<span class="fc" id="L114">                Set.of(Role.DRIVER)</span>
+        );
+
+<span class="fc" id="L117">        assertThat(jwtService.extractUsername(token)).isNull();</span>
+<span class="fc" id="L118">    }</span>
+
+    @Test
+    void extractRoles_singleRoleShouldBeExtractedCorrectly() {
+<span class="fc" id="L122">        String token = jwtService.generateToken(</span>
+                null,
+<span class="fc" id="L124">                Set.of(Role.DRIVER)</span>
+        );
+
+<span class="fc" id="L127">        assertThat(jwtService.extractRoles(token)).isEqualTo(Set.of(Role.DRIVER));</span>
+<span class="fc" id="L128">    }</span>
+
+    @Test
+    void extractRoles_multipleRolesShouldBeExtractedCorrectly() {
+<span class="fc" id="L132">        String token = jwtService.generateToken(</span>
+                null,
+<span class="fc" id="L134">                Set.of(Role.DRIVER, Role.CUSTOMER)</span>
+        );
+
+<span class="fc" id="L137">        assertThat(jwtService.extractRoles(token)).isEqualTo(Set.of(Role.DRIVER, Role.CUSTOMER));</span>
+<span class="fc" id="L138">    }</span>
+
+    @Test
+    void extractRoles_emptyRolesSet() {
+<span class="fc" id="L142">        String token = jwtService.generateToken(</span>
+                null,
+<span class="fc" id="L144">                Set.of()</span>
+        );
+
+<span class="fc" id="L147">        assertThat(jwtService.extractRoles(token)).isEqualTo(Set.of());</span>
+<span class="fc" id="L148">    }</span>
+
+    @Test
+    void validateToken_shouldReturnTrueIfTokenIsValidAndUsernameMatches() {
+<span class="fc" id="L152">        String username = &quot;driver@routemaster.com&quot;;</span>
+<span class="fc" id="L153">        Set&lt;Role&gt; roles = Set.of(Role.DRIVER);</span>
+
+<span class="fc" id="L155">        String token = jwtService.generateToken(username, roles);</span>
+
+<span class="fc" id="L157">        assertThat(jwtService.validateToken(token, username)).isTrue();</span>
+<span class="fc" id="L158">    }</span>
+
+    @Test
+    void validateToken_shouldReturnFalseIfTokenIsExpiredButUsernameMatches() {
+<span class="fc" id="L162">        ReflectionTestUtils.setField(jwtService, &quot;accessTokenExpiry&quot;, -1000L);</span>
+<span class="fc" id="L163">        String username = &quot;driver@routemaster.com&quot;;</span>
+<span class="fc" id="L164">        Set&lt;Role&gt; roles = Set.of(Role.DRIVER);</span>
+
+<span class="fc" id="L166">        String expiredToken = jwtService.generateToken(username, roles);</span>
+
+<span class="pc" id="L168">        assertThrows(ExpiredJwtException.class, () -&gt; jwtService.validateToken(expiredToken, username));</span>
+<span class="fc" id="L169">    }</span>
+
+    @Test
+    void validateToken_shouldReturnFalseIfTokenIsValidButUsernameIsWrong() {
+<span class="fc" id="L173">        String token = jwtService.generateToken(</span>
+                &quot;driver@routemaster.com&quot;,
+<span class="fc" id="L175">                Set.of(Role.DRIVER)</span>
+        );
+
+<span class="fc" id="L178">        assertThat(jwtService.validateToken(token, &quot;john&quot;)).isFalse();</span>
+<span class="fc" id="L179">    }</span>
+
+    @Test
+    void validateToken_shouldReturnFalseIfTokenIsTamperedWith() {
+<span class="fc" id="L183">        String validToken = jwtService.generateToken(</span>
+                &quot;driver@routemaster.com&quot;,
+<span class="fc" id="L185">                Set.of(Role.DRIVER)</span>
+        );
+<span class="fc" id="L187">        String tamperedToken = validToken.substring(0, validToken.lastIndexOf(&quot;.&quot;)) + &quot;.invalidSignature&quot;;</span>
+<span class="pc" id="L188">        assertThrows(SecurityException.class, () -&gt; jwtService.validateToken(tamperedToken, &quot;driver@routemaster.com&quot;));</span>
+<span class="fc" id="L189">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

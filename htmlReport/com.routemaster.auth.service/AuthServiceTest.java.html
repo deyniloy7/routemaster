@@ -1,0 +1,249 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AuthServiceTest.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">jacoco.exec</a> &gt; <a href="index.source.html" class="el_package">com.routemaster.auth.service</a> &gt; <span class="el_source">AuthServiceTest.java</span></div><h1>AuthServiceTest.java</h1><pre class="source lang-java linenums">package com.routemaster.auth.service;
+
+import com.routemaster.auth.dto.*;
+import com.routemaster.auth.entity.Role;
+import com.routemaster.auth.entity.User;
+import com.routemaster.auth.exception.InvalidTokenException;
+import com.routemaster.auth.exception.UserAlreadyExistsException;
+import com.routemaster.auth.exception.UserNotFoundException;
+import com.routemaster.auth.repository.UserRepository;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.crypto.password.PasswordEncoder;
+
+import java.util.HashSet;
+import java.util.Optional;
+import java.util.Set;
+
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+@ExtendWith(MockitoExtension.class)
+<span class="fc" id="L34">public class AuthServiceTest {</span>
+    @Mock
+    private UserRepository userRepository;
+
+    @Mock
+    private JwtService jwtService;
+
+    @Mock
+    private PasswordEncoder passwordEncoder;
+
+    @Mock
+    private AuthenticationManager authenticationManager;
+
+    @Mock
+    private RedisTemplate&lt;String, String&gt; redisTemplate;
+
+    @Mock
+    private ValueOperations&lt;String, String&gt; valueOperations;
+
+    @InjectMocks
+    private AuthService authService;
+
+    private User mockUser;
+
+    @BeforeEach
+    void setUp() {
+<span class="fc" id="L60">        mockUser = User.builder()</span>
+<span class="fc" id="L61">                .email(&quot;driver@routemaster.com&quot;)</span>
+<span class="fc" id="L62">                .id(&quot;userId001&quot;)</span>
+<span class="fc" id="L63">                .passwordHash(&quot;hashedPass123&quot;)</span>
+<span class="fc" id="L64">                .roles(new HashSet&lt;&gt;(Set.of(Role.CUSTOMER)))</span>
+<span class="fc" id="L65">                .firstName(&quot;John&quot;)</span>
+<span class="fc" id="L66">                .lastName(&quot;Doe&quot;)</span>
+<span class="fc" id="L67">                .build();</span>
+<span class="fc" id="L68">    }</span>
+
+    @Test
+    void register_shouldSucceed_whenEmailDoesNotExist() {
+        // Arrange
+<span class="fc" id="L73">        RegisterRequest request = new RegisterRequest(&quot;John&quot;, &quot;Doe&quot;, &quot;driver@routemaster.com&quot;, &quot;1234567890&quot;, &quot;Secure123&quot;);</span>
+<span class="fc" id="L74">        when(userRepository.findByEmail(request.getEmail())).thenReturn(Optional.empty());</span>
+<span class="fc" id="L75">        when(passwordEncoder.encode(request.getPassword())).thenReturn(&quot;hashedPass123&quot;);</span>
+<span class="fc" id="L76">        when(redisTemplate.opsForValue()).thenReturn(valueOperations);</span>
+
+<span class="fc" id="L78">        when(userRepository.save(any(User.class))).thenReturn(mockUser);</span>
+<span class="fc" id="L79">        when(jwtService.generateToken(mockUser.getEmail(), mockUser.getRoles())).thenReturn(&quot;mockAccessToken&quot;);</span>
+
+        // Act
+<span class="fc" id="L82">        AuthResponse response = authService.register(request);</span>
+
+        // Assert
+<span class="fc" id="L85">        assertThat(response.getStatus()).isEqualTo(AuthStatus.SUCCESS);</span>
+<span class="fc" id="L86">        assertThat(response.getUserId()).isEqualTo(&quot;userId001&quot;);</span>
+<span class="fc" id="L87">        assertThat(response.getFirstName()).isEqualTo(&quot;John&quot;);</span>
+<span class="fc" id="L88">        assertThat(response.getAccessToken()).isEqualTo(&quot;mockAccessToken&quot;);</span>
+<span class="fc" id="L89">        assertThat(response.getRefreshToken()).isNotNull();</span>
+<span class="fc" id="L90">        assertThat(response.getRoles()).isEqualTo(Set.of(Role.CUSTOMER));</span>
+<span class="fc" id="L91">    }</span>
+
+    @Test
+    void register_shouldThrowUserAlreadyExistsException_whenEmailExists() {
+        // Arrange
+<span class="fc" id="L96">        RegisterRequest request = new RegisterRequest(&quot;John&quot;, &quot;Doe&quot;, &quot;driver@routemaster.com&quot;, &quot;1234567890&quot;, &quot;Secure123&quot;);</span>
+<span class="fc" id="L97">        when(userRepository.findByEmail(request.getEmail())).thenReturn(Optional.of(new User()));</span>
+
+<span class="pc" id="L99">        assertThrows(UserAlreadyExistsException.class, () -&gt; authService.register(request));</span>
+<span class="fc" id="L100">    }</span>
+
+    @Test
+    void login_shouldSucceed_whenCredentialsAreValid() {
+        // Arrange
+<span class="fc" id="L105">        LoginRequest request = new LoginRequest(&quot;driver@routemaster.com&quot;, &quot;Secure123&quot;);</span>
+<span class="fc" id="L106">        when(redisTemplate.opsForValue()).thenReturn(valueOperations);</span>
+
+<span class="fc" id="L108">        when(userRepository.findByEmail(request.getEmail())).thenReturn(Optional.of(mockUser));</span>
+<span class="fc" id="L109">        when(jwtService.generateToken(mockUser.getEmail(), mockUser.getRoles())).thenReturn(&quot;mockAccessToken&quot;);</span>
+
+        // Act
+<span class="fc" id="L112">        AuthResponse response = authService.login(request);</span>
+
+        // Assert
+<span class="fc" id="L115">        assertThat(response.getStatus()).isEqualTo(AuthStatus.SUCCESS);</span>
+<span class="fc" id="L116">        assertThat(response.getUserId()).isEqualTo(&quot;userId001&quot;);</span>
+<span class="fc" id="L117">        assertThat(response.getFirstName()).isEqualTo(&quot;John&quot;);</span>
+<span class="fc" id="L118">        assertThat(response.getAccessToken()).isEqualTo(&quot;mockAccessToken&quot;);</span>
+<span class="fc" id="L119">        assertThat(response.getRefreshToken()).isNotNull();</span>
+<span class="fc" id="L120">        assertThat(response.getRoles()).isEqualTo(Set.of(Role.CUSTOMER));</span>
+<span class="fc" id="L121">    }</span>
+
+    @Test
+    void login_shouldThrowBadCredentialsException_whenCredentialsAreInvalid() {
+        // Arrange
+<span class="fc" id="L126">        LoginRequest request = new LoginRequest(&quot;driver@routemaster.com&quot;, &quot;Secure123&quot;);</span>
+<span class="fc" id="L127">        when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))</span>
+<span class="fc" id="L128">                .thenThrow(new BadCredentialsException(&quot;Invalid credentials&quot;));</span>
+
+<span class="pc" id="L130">        assertThrows(BadCredentialsException.class, () -&gt; authService.login(request));</span>
+<span class="fc" id="L131">    }</span>
+
+    @Test
+    void refreshToken_shouldThrowInvalidTokenException_whenTokenNotFoundInRedis() {
+        // Arrange
+<span class="fc" id="L136">        RefreshTokenRequest request = new RefreshTokenRequest(&quot;refresh-token-123&quot;);</span>
+<span class="fc" id="L137">        when(redisTemplate.opsForValue()).thenReturn(valueOperations);</span>
+
+<span class="pc" id="L139">        assertThrows(InvalidTokenException.class, () -&gt; authService.refreshToken(request));</span>
+<span class="fc" id="L140">    }</span>
+
+    @Test
+    void refreshToken_shouldThrowUserNotFoundException_whenUserDoesNotExist() {
+        // Arrange
+<span class="fc" id="L145">        RefreshTokenRequest request = new RefreshTokenRequest(&quot;refresh-token-123&quot;);</span>
+<span class="fc" id="L146">        when(redisTemplate.opsForValue()).thenReturn(valueOperations);</span>
+<span class="fc" id="L147">        when(valueOperations.get(request.getRefreshToken())).thenReturn(&quot;driver@routemaster.com&quot;);</span>
+
+<span class="fc" id="L149">        when(userRepository.findByEmail(&quot;driver@routemaster.com&quot;)).thenReturn(Optional.empty());</span>
+
+<span class="pc" id="L151">        assertThrows(UserNotFoundException.class, () -&gt; authService.refreshToken(request));</span>
+<span class="fc" id="L152">    }</span>
+
+    @Test
+    void refreshToken_shouldSucceed_whenTokenIsValid() {
+        // Arrange
+<span class="fc" id="L157">        RefreshTokenRequest request = new RefreshTokenRequest(&quot;refresh-token-123&quot;);</span>
+<span class="fc" id="L158">        when(redisTemplate.opsForValue()).thenReturn(valueOperations);</span>
+<span class="fc" id="L159">        when(valueOperations.get(request.getRefreshToken())).thenReturn(&quot;driver@routemaster.com&quot;);</span>
+
+<span class="fc" id="L161">        when(userRepository.findByEmail(&quot;driver@routemaster.com&quot;)).thenReturn(Optional.of(mockUser));</span>
+<span class="fc" id="L162">        when(jwtService.generateToken(mockUser.getEmail(), mockUser.getRoles())).thenReturn(&quot;mockAccessToken&quot;);</span>
+
+        // Act
+<span class="fc" id="L165">        AuthResponse response = authService.refreshToken(request);</span>
+
+        // Assert
+<span class="fc" id="L168">        assertThat(response.getStatus()).isEqualTo(AuthStatus.SUCCESS);</span>
+<span class="fc" id="L169">        assertThat(response.getUserId()).isEqualTo(&quot;userId001&quot;);</span>
+<span class="fc" id="L170">        assertThat(response.getFirstName()).isEqualTo(&quot;John&quot;);</span>
+<span class="fc" id="L171">        assertThat(response.getAccessToken()).isEqualTo(&quot;mockAccessToken&quot;);</span>
+<span class="fc" id="L172">        assertThat(response.getRefreshToken()).isNotNull();</span>
+<span class="fc" id="L173">        assertThat(response.getRoles()).isEqualTo(Set.of(Role.CUSTOMER));</span>
+<span class="fc" id="L174">    }</span>
+
+    @Test
+    void logout_shouldSucceed() {
+        // Arrange
+<span class="fc" id="L179">        RefreshTokenRequest request = new RefreshTokenRequest(&quot;refresh-token-123&quot;);</span>
+
+        // Act
+<span class="fc" id="L182">        authService.logout(request);</span>
+
+        // Assert
+<span class="fc" id="L185">        verify(redisTemplate).delete(&quot;refresh:&quot; + request.getRefreshToken());</span>
+<span class="fc" id="L186">    }</span>
+
+    @Test
+    void activate_shouldActivateUser() {
+
+<span class="fc" id="L191">        when(userRepository.findByEmail(&quot;driver@routemaster.com&quot;)).thenReturn(Optional.of(mockUser));</span>
+
+        // Act
+<span class="fc" id="L194">        authService.activate(&quot;driver@routemaster.com&quot;);</span>
+
+        // Assert
+<span class="fc" id="L197">        verify(userRepository).save(mockUser);</span>
+<span class="fc" id="L198">        assertThat(mockUser.isActive()).isTrue();</span>
+<span class="fc" id="L199">    }</span>
+
+    @Test
+    void activate_shouldThrowUserNotFoundException_whenUserDoesNotExist() {
+<span class="fc" id="L203">        when(userRepository.findByEmail(&quot;driver@routemaster.com&quot;)).thenReturn(Optional.empty());</span>
+
+<span class="pc" id="L205">        assertThrows(UserNotFoundException.class, () -&gt; authService.activate(&quot;driver@routemaster.com&quot;));</span>
+<span class="fc" id="L206">    }</span>
+
+    @Test
+    void deactivate_shouldDeactivateUser() {
+
+<span class="fc" id="L211">        when(userRepository.findByEmail(&quot;driver@routemaster.com&quot;)).thenReturn(Optional.of(mockUser));</span>
+
+        // Act
+<span class="fc" id="L214">        authService.deactivate(&quot;driver@routemaster.com&quot;);</span>
+
+        // Assert
+<span class="fc" id="L217">        verify(userRepository).save(mockUser);</span>
+<span class="fc" id="L218">        assertThat(mockUser.isActive()).isFalse();</span>
+<span class="fc" id="L219">    }</span>
+
+    @Test
+    void deactivate_shouldThrowUserNotFoundException_whenUserDoesNotExist() {
+<span class="fc" id="L223">        when(userRepository.findByEmail(&quot;driver@routemaster.com&quot;)).thenReturn(Optional.empty());</span>
+
+<span class="pc" id="L225">        assertThrows(UserNotFoundException.class, () -&gt; authService.deactivate(&quot;driver@routemaster.com&quot;));</span>
+<span class="fc" id="L226">    }</span>
+
+    @Test
+    void assignRole_shouldAssignARoleToAUser() {
+
+<span class="fc" id="L231">        when(userRepository.findByEmail(&quot;driver@routemaster.com&quot;)).thenReturn(Optional.of(mockUser));</span>
+
+        // Act
+<span class="fc" id="L234">        authService.assignRole(&quot;driver@routemaster.com&quot;, Role.DRIVER);</span>
+
+        // Assert
+<span class="fc" id="L237">        verify(userRepository).save(mockUser);</span>
+<span class="fc" id="L238">        assertThat(mockUser.getRoles()).isEqualTo(Set.of(Role.DRIVER, Role.CUSTOMER));</span>
+<span class="fc" id="L239">    }</span>
+
+    @Test
+    void assignRole_shouldThrowUserNotFoundException_whenUserDoesNotExist() {
+<span class="fc" id="L243">        when(userRepository.findByEmail(&quot;driver@routemaster.com&quot;)).thenReturn(Optional.empty());</span>
+
+<span class="pc" id="L245">        assertThrows(UserNotFoundException.class, () -&gt; authService.assignRole(&quot;driver@routemaster.com&quot;, Role.DRIVER));</span>
+<span class="fc" id="L246">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

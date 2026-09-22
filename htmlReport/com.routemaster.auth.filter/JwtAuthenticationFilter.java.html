@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>JwtAuthenticationFilter.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">jacoco.exec</a> &gt; <a href="index.source.html" class="el_package">com.routemaster.auth.filter</a> &gt; <span class="el_source">JwtAuthenticationFilter.java</span></div><h1>JwtAuthenticationFilter.java</h1><pre class="source lang-java linenums">package com.routemaster.auth.filter;
+
+import com.routemaster.auth.security.UserDetailsServiceImpl;
+import com.routemaster.auth.service.JwtService;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.MalformedJwtException;
+import io.jsonwebtoken.security.SecurityException;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
+import org.springframework.stereotype.Component;
+import org.springframework.web.filter.OncePerRequestFilter;
+
+import java.io.IOException;
+
+@Component
+<span class="nc" id="L23">@RequiredArgsConstructor</span>
+public class JwtAuthenticationFilter extends OncePerRequestFilter {
+
+    private static final String BEARER_PREFIX = &quot;Bearer &quot;;
+
+    private static final String AUTH_HEADER = &quot;Authorization&quot;;
+
+<span class="nc" id="L30">    private final WebAuthenticationDetailsSource authDetailsSource = new WebAuthenticationDetailsSource();</span>
+
+    private final JwtService jwtService;
+
+    private final UserDetailsServiceImpl userDetailsService;
+
+    @Override
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+<span class="nc" id="L38">        String authHeader = request.getHeader(AUTH_HEADER);</span>
+
+
+<span class="nc bnc" id="L41" title="All 4 branches missed.">        if(authHeader == null || !authHeader.startsWith(BEARER_PREFIX)) {</span>
+<span class="nc" id="L42">            filterChain.doFilter(request, response);</span>
+<span class="nc" id="L43">            return;</span>
+        }
+
+<span class="nc" id="L46">        String token = authHeader.substring(BEARER_PREFIX.length());</span>
+
+        try {
+<span class="nc" id="L49">            String username = jwtService.extractUsername(token);</span>
+
+<span class="nc bnc" id="L51" title="All 4 branches missed.">            if(username != null &amp;&amp; SecurityContextHolder.getContext().getAuthentication() == null) {</span>
+<span class="nc" id="L52">                UserDetails userDetails = userDetailsService.loadUserByUsername(username);</span>
+
+<span class="nc bnc" id="L54" title="All 2 branches missed.">                if(jwtService.validateToken(token, username)</span>
+<span class="nc bnc" id="L55" title="All 2 branches missed.">                &amp;&amp; userDetails.isEnabled()</span>
+<span class="nc bnc" id="L56" title="All 2 branches missed.">                &amp;&amp; userDetails.isAccountNonLocked()</span>
+<span class="nc bnc" id="L57" title="All 2 branches missed.">                &amp;&amp; userDetails.isAccountNonExpired()) {</span>
+<span class="nc" id="L58">                    UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());</span>
+<span class="nc" id="L59">                    authToken.setDetails(authDetailsSource.buildDetails(request));</span>
+
+<span class="nc" id="L61">                    SecurityContextHolder.getContext().setAuthentication(authToken);</span>
+                }
+            }
+<span class="nc" id="L64">        } catch (MalformedJwtException m) {</span>
+<span class="nc" id="L65">            response.sendError(HttpServletResponse.SC_UNAUTHORIZED,</span>
+                    &quot;Invalid token format&quot;);
+<span class="nc" id="L67">            return;</span>
+<span class="nc" id="L68">        } catch (ExpiredJwtException  ex) {</span>
+<span class="nc" id="L69">            response.sendError(HttpServletResponse.SC_UNAUTHORIZED,</span>
+                    &quot;Token expired&quot;);
+<span class="nc" id="L71">            return;</span>
+<span class="nc" id="L72">        } catch (SecurityException s) {</span>
+<span class="nc" id="L73">            response.sendError(HttpServletResponse.SC_UNAUTHORIZED,</span>
+                    &quot;Invalid token signature&quot;);
+<span class="nc" id="L75">            return;</span>
+<span class="nc" id="L76">        }</span>
+<span class="nc" id="L77">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

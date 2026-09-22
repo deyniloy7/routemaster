@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>UserDetailsImpl.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">jacoco.exec</a> &gt; <a href="index.source.html" class="el_package">com.routemaster.auth.security</a> &gt; <span class="el_source">UserDetailsImpl.java</span></div><h1>UserDetailsImpl.java</h1><pre class="source lang-java linenums">package com.routemaster.auth.security;
+
+import com.routemaster.auth.entity.Role;
+import lombok.Getter;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+
+import java.util.Collection;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+
+public class UserDetailsImpl implements UserDetails {
+
+//    private final User user;
+
+<span class="fc" id="L18">    @Getter</span>
+    private final String id;
+
+<span class="fc" id="L21">    @Getter</span>
+    private final String email;
+
+    private final String passwordHash; // needed for Spring Security only
+    private final Set&lt;Role&gt; roles;
+    private final boolean active;
+
+<span class="fc" id="L28">    public UserDetailsImpl(String id, String email, String passwordHash, Set&lt;Role&gt; roles, boolean active) {</span>
+<span class="fc" id="L29">        this.id = id;</span>
+<span class="fc" id="L30">        this.email = email;</span>
+<span class="fc" id="L31">        this.passwordHash = passwordHash;</span>
+<span class="fc" id="L32">        this.roles = roles;</span>
+<span class="fc" id="L33">        this.active = active;</span>
+<span class="fc" id="L34">    }</span>
+
+    @Override
+    public Collection&lt;? extends GrantedAuthority&gt; getAuthorities() {
+<span class="fc" id="L38">        return this.roles.stream()</span>
+<span class="fc" id="L39">                .map(role -&gt; new SimpleGrantedAuthority(&quot;ROLE_&quot; + role.name()))</span>
+<span class="fc" id="L40">                .collect(Collectors.toList());</span>
+    }
+
+    @Override
+    public String getPassword() {
+<span class="fc" id="L45">        return this.passwordHash;</span>
+    }
+
+    @Override
+    public String getUsername() {
+<span class="fc" id="L50">        return this.email;</span>
+    }
+
+    @Override
+    public boolean isAccountNonExpired() {
+<span class="fc" id="L55">        return this.active;</span>
+    }
+
+    @Override
+    public boolean isAccountNonLocked() {
+<span class="fc" id="L60">        return this.active;</span>
+    }
+
+    @Override
+    public boolean isCredentialsNonExpired() {
+<span class="fc" id="L65">        return this.active;</span>
+    }
+
+    @Override
+    public boolean isEnabled() {
+<span class="fc" id="L70">        return this.active;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>
